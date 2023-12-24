@@ -15,7 +15,7 @@ Use at your own risk.
 1. Set up this plug-in as a Publish Service on Lightroom Publishing Manager.
 1. Create a published collection:
 
-![plot](doc/Screenshot 2023-12-17 151616.png)
+![plot](./doc/Screenshot%202023-12-17%20151616.png)
 
 ## Credits
 
