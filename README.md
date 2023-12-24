@@ -11,8 +11,11 @@ Use at your own risk.
 ## Install and Usage
 
 1. Download a zip file from [Github Release](https://github.com/stanaka/lightroom-google-photo-plugin/releases) and uncompress it.
-2. Copy the **DirectoryTreePublisher.lrplugin** folder into the Lightroom plugins folder or add this plugin from Lightroom Plug-in Manager.
-3. Set up this plug-in as a Publish Service on Lightroom Publishing Manager.
+1. Copy the **DirectoryTreePublisher.lrplugin** folder into the Lightroom plugins folder or add this plugin from Lightroom Plug-in Manager.
+1. Set up this plug-in as a Publish Service on Lightroom Publishing Manager.
+1. Create a published collection:
+
+![plot](doc/Screenshot 2023-12-17 151616.png)
 
 ## Credits
 
