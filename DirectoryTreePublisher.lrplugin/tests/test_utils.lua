@@ -1,86 +1,13 @@
 --[[
-  Unit tests for longestCommonRoot function
-  Run with: lua test_longestCommonRoot.lua
+  Unit tests for utils module
+  Run with: lua test_utils.lua
 ]]
 
--- ============================================================================
--- Helper functions (copied from main module for standalone testing)
--- ============================================================================
+-- Add parent directory to package path so we can require utils
+package.path = package.path .. ";../?.lua"
 
-local function splitString(inputstr, sep)
-  if sep == nil then
-    sep = "%s"
-  end
-  local t = {}
-  for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
-    table.insert(t, str)
-  end
-  return t
-end
-
-local function normalizePath(p)
-  return string.gsub(p, "\\", "/")
-end
-
--- ============================================================================
--- Function under test
--- ============================================================================
-
-local function longestCommonRoot(directories)
-  if not directories or #directories == 0 then
-    return ""
-  end
-
-  -- Normalize all paths to use forward slashes and split into components
-  local allComponents = {}
-  for i, d in ipairs(directories) do
-    local normalized = normalizePath(d)
-    allComponents[i] = splitString(normalized, "/")
-  end
-
-  -- Find the minimum number of components across all paths
-  local minLength = #allComponents[1]
-  for i = 2, #allComponents do
-    if #allComponents[i] < minLength then
-      minLength = #allComponents[i]
-    end
-  end
-
-  -- Find common prefix by comparing components at each position
-  local commonComponents = {}
-  for pos = 1, minLength do
-    local component = allComponents[1][pos]
-    local allMatch = true
-
-    for i = 2, #allComponents do
-      if allComponents[i][pos] ~= component then
-        allMatch = false
-        break
-      end
-    end
-
-    if allMatch then
-      table.insert(commonComponents, component)
-    else
-      break
-    end
-  end
-
-  -- Join the common components back into a path
-  if #commonComponents == 0 then
-    return ""
-  end
-
-  local result = table.concat(commonComponents, "/")
-
-  -- Preserve leading slash for Unix-style absolute paths
-  local firstPath = normalizePath(directories[1])
-  if firstPath:sub(1, 1) == "/" then
-    result = "/" .. result
-  end
-
-  return result
-end
+-- Import the shared utilities
+local utils = require 'utils'
 
 -- ============================================================================
 -- Test framework
@@ -108,20 +35,20 @@ end
 print("\n=== Testing longestCommonRoot ===\n")
 
 -- Test 1: Empty input
-assertEquals("", longestCommonRoot(nil), "nil input returns empty string")
-assertEquals("", longestCommonRoot({}), "empty array returns empty string")
+assertEquals("", utils.longestCommonRoot(nil), "nil input returns empty string")
+assertEquals("", utils.longestCommonRoot({}), "empty array returns empty string")
 
 -- Test 2: Single directory
 assertEquals(
   "D:/Photos/2023/January",
-  longestCommonRoot({"D:/Photos/2023/January"}),
+  utils.longestCommonRoot({ "D:/Photos/2023/January" }),
   "single directory returns itself"
 )
 
 -- Test 3: Two directories with common root
 assertEquals(
   "D:/Photos/2023",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023/January",
     "D:/Photos/2023/February"
   }),
@@ -131,7 +58,7 @@ assertEquals(
 -- Test 4: Multiple directories with deeper common root
 assertEquals(
   "D:/Photos",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023/January",
     "D:/Photos/2023/February",
     "D:/Photos/2024/March"
@@ -142,7 +69,7 @@ assertEquals(
 -- Test 5: No common root (different drives)
 assertEquals(
   "",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "C:/Photos/2023",
     "D:/Photos/2023"
   }),
@@ -152,7 +79,7 @@ assertEquals(
 -- Test 6: Windows backslash paths (should normalize)
 assertEquals(
   "D:/Photos/2023",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:\\Photos\\2023\\January",
     "D:\\Photos\\2023\\February"
   }),
@@ -162,7 +89,7 @@ assertEquals(
 -- Test 7: Mixed path separators
 assertEquals(
   "D:/Photos/2023",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023/January",
     "D:\\Photos\\2023\\February"
   }),
@@ -172,7 +99,7 @@ assertEquals(
 -- Test 8: Common root is the drive only
 assertEquals(
   "D:",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023",
     "D:/Videos/2023"
   }),
@@ -182,7 +109,7 @@ assertEquals(
 -- Test 9: Identical paths
 assertEquals(
   "D:/Photos/2023/January",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023/January",
     "D:/Photos/2023/January"
   }),
@@ -192,7 +119,7 @@ assertEquals(
 -- Test 10: One path is prefix of another
 assertEquals(
   "D:/Photos",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos",
     "D:/Photos/2023/January"
   }),
@@ -202,7 +129,7 @@ assertEquals(
 -- Test 11: Unix-style paths
 assertEquals(
   "/home/user/photos",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "/home/user/photos/2023",
     "/home/user/photos/2024"
   }),
@@ -212,7 +139,7 @@ assertEquals(
 -- Test 12: Case sensitivity (Lua string comparison is case-sensitive)
 assertEquals(
   "D:",
-  longestCommonRoot({
+  utils.longestCommonRoot({
     "D:/Photos/2023",
     "D:/photos/2023"
   }),

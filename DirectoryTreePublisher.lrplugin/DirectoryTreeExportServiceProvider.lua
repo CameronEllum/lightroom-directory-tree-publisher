@@ -10,6 +10,9 @@ local bind = LrView.bind
 -- Look for the log at (e.g.) D:\Cameron\LrClassicLogs\DirectoryTreePublisher.log
 require 'Logger'
 
+-- Shared utility functions
+local utils = require 'utils'
+
 -- ============================================================================--
 local exportServiceProvider = {}
 exportServiceProvider.small_icon = 'folder.png'
@@ -17,11 +20,11 @@ exportServiceProvider.publish_fallbackNameBinding = 'fullname'
 exportServiceProvider.titleForGoToPublishedCollection = "disable"
 exportServiceProvider.supportsCustomSortOrder = false
 exportServiceProvider.supportsIncrementalPublish = 'only'
-exportServiceProvider.hideSections = {'exportLocation'}
-exportServiceProvider.allowFileFormats = {'JPEG'}
-exportServiceProvider.allowColorSpaces = {'sRGB'}
+exportServiceProvider.hideSections = { 'exportLocation' }
+exportServiceProvider.allowFileFormats = { 'JPEG' }
+exportServiceProvider.allowColorSpaces = { 'sRGB' }
 exportServiceProvider.canExportVideo = false
-exportServiceProvider.exportPresetFields = {{
+exportServiceProvider.exportPresetFields = { {
   key = 'catalogRootDirectory',
   default = ""
 }, {
@@ -30,209 +33,97 @@ exportServiceProvider.exportPresetFields = {{
 }, {
   key = 'destinationRootDirectory',
   default = ""
-}}
+} }
 
 --[[
 Add fields to the export dialog for source and target directories.
 ]]
 function exportServiceProvider.sectionsForTopOfDialog(f, propertyTable)
   return {
-  {
-    title = LOC "$$$/DirectoryTreePublisher/ExportDialog/Account=Directories",
+    {
+      title = LOC "$$$/DirectoryTreePublisher/ExportDialog/Account=Directories",
 
-    f:row{
-      spacing = f:control_spacing(),
-      f:static_text{
-        title = "The destination root folder will replace the source root folder in the path.",
-        alignment = 'left'
-      }
-    },
+      f:row {
+        spacing = f:control_spacing(),
+        f:static_text {
+          title = "The destination root folder will replace the source root folder in the path.",
+          alignment = 'left'
+        }
+      },
 
-    -- Source root folder with browse button
-    f:row{
-      spacing = f:control_spacing(),
-      f:static_text{
-        title = "Source root folder:",
-        alignment = 'left',
-        width = 120
-      },
-      f:edit_field{
-        fill_horizontal = 1,
-        value = bind 'sourceRootDirectory'
-      },
-      f:push_button{
-        title = "Browse...",
-        action = function()
-          local result = LrDialogs.runOpenPanel{
-            title = "Select Source Root Folder",
-            canChooseFiles = false,
-            canChooseDirectories = true,
-            allowsMultipleSelection = false
-          }
-          if result and #result > 0 then
-            propertyTable.sourceRootDirectory = result[1]
+      -- Source root folder with browse button
+      f:row {
+        spacing = f:control_spacing(),
+        f:static_text {
+          title = "Source root folder:",
+          alignment = 'left',
+          width = 120
+        },
+        f:edit_field {
+          fill_horizontal = 1,
+          value = bind 'sourceRootDirectory'
+        },
+        f:push_button {
+          title = "Browse...",
+          action = function()
+            local result = LrDialogs.runOpenPanel {
+              title = "Select Source Root Folder",
+              canChooseFiles = false,
+              canChooseDirectories = true,
+              allowsMultipleSelection = false
+            }
+            if result and #result > 0 then
+              propertyTable.sourceRootDirectory = result[1]
+            end
           end
-        end
-      }
-    },
+        }
+      },
 
-    -- Destination folder with browse button
-    f:row{
-      spacing = f:control_spacing(),
-      f:static_text{
-        title = "Destination folder:",
-        alignment = 'left',
-        width = 120
-      },
-      f:edit_field{
-        fill_horizontal = 1,
-        value = bind 'destinationRootDirectory'
-      },
-      f:push_button{
-        title = "Browse...",
-        action = function()
-          local result = LrDialogs.runOpenPanel{
-            title = "Select Destination Folder",
-            canChooseFiles = false,
-            canChooseDirectories = true,
-            allowsMultipleSelection = false
-          }
-          if result and #result > 0 then
-            propertyTable.destinationRootDirectory = result[1]
+      -- Destination folder with browse button
+      f:row {
+        spacing = f:control_spacing(),
+        f:static_text {
+          title = "Destination folder:",
+          alignment = 'left',
+          width = 120
+        },
+        f:edit_field {
+          fill_horizontal = 1,
+          value = bind 'destinationRootDirectory'
+        },
+        f:push_button {
+          title = "Browse...",
+          action = function()
+            local result = LrDialogs.runOpenPanel {
+              title = "Select Destination Folder",
+              canChooseFiles = false,
+              canChooseDirectories = true,
+              allowsMultipleSelection = false
+            }
+            if result and #result > 0 then
+              propertyTable.destinationRootDirectory = result[1]
+            end
           end
-        end
+        }
       }
-    }
 
-  }}
-end
-
---[[
-Splits a string by a separator. If no separator is provided then splits on whitespace.
-]]
-local function splitString(inputstr, sep)
-  if sep == nil then
-    sep = "%s"
-  end
-  local t = {}
-  for str in string.gmatch(inputstr, "([^" .. sep .. "]+)") do
-    table.insert(t, str)
-  end
-  return t
-end
-
---[[
-Returns the longest common root path among the given directory paths.
-
-The longest common root is defined as the longest path prefix that is common
-to all directories.
-
-The directories are expected to be given as an array of path strings.
-
-The function returns the longest common root path as a string.
-Returns an empty string if no common root exists or if the input is empty.
-
-Example:
-
-local directories = {
-  "D:/Photos/2023/January",
-  "D:/Photos/2023/February",
-  "D:/Photos/2024/March"
-}
-
-local commonRoot = longestCommonRoot(directories)
--- commonRoot is now "D:/Photos"
-
---]]
-local function longestCommonRoot(directories)
-  if not directories or #directories == 0 then
-    return ""
-  end
-
-  -- Normalize all paths to use forward slashes and split into components
-  local allComponents = {}
-  for i, d in ipairs(directories) do
-    local normalized = normalizePath(d)
-    allComponents[i] = splitString(normalized, "/")
-  end
-
-  -- Find the minimum number of components across all paths
-  local minLength = #allComponents[1]
-  for i = 2, #allComponents do
-    if #allComponents[i] < minLength then
-      minLength = #allComponents[i]
-    end
-  end
-
-  -- Find common prefix by comparing components at each position
-  local commonComponents = {}
-  for pos = 1, minLength do
-    local component = allComponents[1][pos]
-    local allMatch = true
-
-    for i = 2, #allComponents do
-      if allComponents[i][pos] ~= component then
-        allMatch = false
-        break
-      end
-    end
-
-    if allMatch then
-      table.insert(commonComponents, component)
-    else
-      break
-    end
-  end
-
-  -- Join the common components back into a path
-  if #commonComponents == 0 then
-    return ""
-  end
-
-  local result = table.concat(commonComponents, "/")
-
-  -- Preserve leading slash for Unix-style absolute paths
-  local firstPath = normalizePath(directories[1])
-  if firstPath:sub(1, 1) == "/" then
-    result = "/" .. result
-  end
-
-  return result
-end
-
-local function deletePrefix(s, p)
-  local t = (s:sub(0, #p) == p) and s:sub(#p + 1) or s
-  return t
-end
-
---[[
-Ensures a path uses forward slashes.
-]]
-local function normalizePath(p)
-  return string.gsub(p, "\\", "/")
-end
-
---[[
-Ensures a path uses back slashes.
-]]
-local function windowsPath(p)
-  return string.gsub(p, "/", "\\")
+    } }
 end
 
 --[[
 Publish a single rendition.
 ]]
-local function publishPhoto(rendition, exportedPath, 
-    sourceRootDirectory,destinationRootDirectory)
+local function publishPhoto(rendition, exportedPath,
+                            sourceRootDirectory, destinationRootDirectory)
   Logger.trace("publishPhoto")
 
   local photo = rendition.photo
 
   -- This is the path of the file in the library
-  local path = normalizePath(photo:getRawMetadata("path"))
+  local path = utils.normalizePath(photo:getRawMetadata("path"))
 
   if photo:getRawMetadata("isVideo") then
-    Logger.info("Skipping: " .. path)    
+    Logger.info("Skipping: " .. path)
     return
   end
 
@@ -240,20 +131,20 @@ local function publishPhoto(rendition, exportedPath,
 
   -- The path in pathOrMessage is the (temporary) path of the exported
   -- image.
-  local exportedPath = normalizePath(exportedPath)
+  local exportedPath = utils.normalizePath(exportedPath)
   Logger.info("  Exported path   : " .. exportedPath)
 
-  -- E.g., 'D:/Cameron/My Pictures/library/2013/PHOTO.DNG' becomes 
+  -- E.g., 'D:/Cameron/My Pictures/library/2013/PHOTO.DNG' becomes
   -- 'library/20133/PHOTO.DNG'
-  local relativePath = deletePrefix(path, sourceRootDirectory)
+  local relativePath = utils.deletePrefix(path, sourceRootDirectory)
   Logger.info("  Relative path   : " .. relativePath)
-  -- E.g., 'D:/Cameron/My Pictures/Highlights' + '/' 
+  -- E.g., 'D:/Cameron/My Pictures/Highlights' + '/'
   --  + 'library/2013/PHOTO.DNG'
   local destinationPath = destinationRootDirectory .. "/" .. relativePath
   -- E.g., 'D:/Cameron/My Pictures/Highlights/library/2013'
-  destinationPath = normalizePath(LrPathUtils.parent(destinationPath))
+  destinationPath = utils.normalizePath(LrPathUtils.parent(destinationPath))
   -- We want the JPEG photo name, not the original.
-  -- E.g., 'D:/Cameron/My Pictures/Highlights/library/2013' + '/' + 'PHOTO.JPG'        
+  -- E.g., 'D:/Cameron/My Pictures/Highlights/library/2013' + '/' + 'PHOTO.JPG'
   destinationPath = destinationPath .. "/" .. LrPathUtils.leafName(exportedPath)
   Logger.info("  Destination path: " .. destinationPath)
 
@@ -262,29 +153,29 @@ local function publishPhoto(rendition, exportedPath,
 
   -- I'm not sure this is necessary
   if LrFileUtils.exists(destinationPath) then
-    Logger.info("  File exists. Deleting." )
+    Logger.info("  File exists. Deleting.")
     local success = LrFileUtils.delete(destinationPath)
     if not success then
-      Logger.error("  Deletion failed: " .. destinationPath )
+      Logger.error("  Deletion failed: " .. destinationPath)
     end
   end
 
-  -- copy seems to be the only LrFileUtils method that needs windows paths 
+  -- copy seems to be the only LrFileUtils method that needs windows paths
   -- (on windows)
   local success, reason = LrFileUtils.copy(
-    windowsPath(exportedPath), windowsPath(destinationPath))
+    utils.windowsPath(exportedPath), utils.windowsPath(destinationPath))
   if not success then
     if reason then
-      Logger.error("  Copy failed: " .. reason )
+      Logger.error("  Copy failed: " .. reason)
     else
-      Logger.error("  Copy failed" )
+      Logger.error("  Copy failed")
     end
   end
 
   -- When done with the exported image, delete the (temporary) file. There
   -- is a cleanup step that happens later, but this will help manage space
   -- in the event of a large upload.
-  LrFileUtils.delete(windowsPath(exportedPath))
+  LrFileUtils.delete(utils.windowsPath(exportedPath))
 
   -- Record this ID with the photo so we know to replace instead of upload.
   -- For ID, we just use the destination path.
@@ -305,9 +196,9 @@ function exportServiceProvider.processRenderedPhotos(functionContext, exportCont
   -- Make a local reference to the export parameters.
   local exportSettings = assert(exportContext.propertyTable)
 
-  local sourceRootDirectory = normalizePath(exportSettings.sourceRootDirectory)
+  local sourceRootDirectory = utils.normalizePath(exportSettings.sourceRootDirectory)
   Logger.info("Source directory: " .. sourceRootDirectory)
-  local destinationRootDirectory = normalizePath(exportSettings.destinationRootDirectory)
+  local destinationRootDirectory = utils.normalizePath(exportSettings.destinationRootDirectory)
   Logger.info("Export directory: " .. destinationRootDirectory)
 
   -- It would be nice to find the root automatically...
@@ -321,15 +212,15 @@ function exportServiceProvider.processRenderedPhotos(functionContext, exportCont
   local renditionsCount = exportSession:countRenditions()
 
   -- Set progress title.
-  local progressScope = exportContext:configureProgress{
+  local progressScope = exportContext:configureProgress {
     title = renditionsCount > 1 and
-      LOC("$$$/DirectoryTreePublisher/Publish/Progress=Publishing ^1 photos to directory tree", nPhotos) or
-      LOC "$$$/DirectoryTreePublisher/Publish/Progress/One=Publishing one photo to directory tree"
+        LOC("$$$/DirectoryTreePublisher/Publish/Progress=Publishing ^1 photos to directory tree", renditionsCount) or
+        LOC "$$$/DirectoryTreePublisher/Publish/Progress/One=Publishing one photo to directory tree"
   }
 
   -- Iterate through photo renditions.
   local photosetUrl
-  for i, rendition in exportContext:renditions{
+  for i, rendition in exportContext:renditions {
     stopIfCanceled = true
   } do
     progressScope:setPortionComplete((i - 1) / renditionsCount)
@@ -351,15 +242,13 @@ function exportServiceProvider.processRenderedPhotos(functionContext, exportCont
       if not success then
         Logger.error("Render failed: " .. pathOrMessage)
       else
-        publishPhoto(rendition, normalizePath(pathOrMessage),
+        publishPhoto(rendition, utils.normalizePath(pathOrMessage),
           sourceRootDirectory, destinationRootDirectory)
       end
-
     else
       -- To get the skipped photo out of the to-republish bin.
       rendition:recordPublishedPhotoId(rendition.publishedPhotoId)
     end
-
   end
 
   progressScope:done()
@@ -368,16 +257,16 @@ end
 function exportServiceProvider.deletePhotosFromPublishedCollection(publishSettings, arrayOfPhotoIds, deletedCallback)
   Logger.trace("deletePhotosFromPublishedCollection")
   for i, photoId in ipairs(arrayOfPhotoIds) do
-    Logger.info("Deleted: " .. photoId)    
-    local success, reason = LrFileUtils.moveToTrash( photoId )
+    Logger.info("Deleted: " .. photoId)
+    local success, reason = LrFileUtils.moveToTrash(photoId)
     if not success then
       if reason then
-        Logger.error("  MoveToTrash failed: " .. reason )
+        Logger.error("  MoveToTrash failed: " .. reason)
       else
-        Logger.error("  MoveToTrash failed" )
+        Logger.error("  MoveToTrash failed")
       end
-    end    
-    deletedCallback( photoId )
+    end
+    deletedCallback(photoId)
   end
 end
 
