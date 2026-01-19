@@ -91,42 +91,83 @@ local function splitString(inputstr, sep)
 end
 
 --[[
-Returns the longest common root among the given directories.
+Returns the longest common root path among the given directory paths.
 
-The longest common root is defined as the longest path that is common
+The longest common root is defined as the longest path prefix that is common
 to all directories.
 
-The directories are expected to be given in a table where the keys
-are the directory names and the values are the paths to the directories.
+The directories are expected to be given as an array of path strings.
 
-The function returns a table with the longest common root as the key
-and the value is the remaining path after the longest common root.
+The function returns the longest common root path as a string.
+Returns an empty string if no common root exists or if the input is empty.
 
 Example:
 
 local directories = {
-  dir1 = "a/b/c/dir1",
-  dir2 = "a/b/c/dir2"
+  "D:/Photos/2023/January",
+  "D:/Photos/2023/February",
+  "D:/Photos/2024/March"
 }
 
-local longestCommonRoot = longestCommonRoot(directories)
-
--- longestCommonRoot is now { a/b/c = { dir1 = "", dir2 = "" } }
-
-!!! Doesn't currently work! !!!
+local commonRoot = longestCommonRoot(directories)
+-- commonRoot is now "D:/Photos"
 
 --]]
 local function longestCommonRoot(directories)
-  local components = {}
-  for _, d in pairs(directories) do
-    components[d] = splitString(d, "\\")
+  if not directories or #directories == 0 then
+    return ""
   end
 
-  local commonComponents = {}
-  for _, d in pairs(directories) do
-    Logger.info(d)
+  -- Normalize all paths to use forward slashes and split into components
+  local allComponents = {}
+  for i, d in ipairs(directories) do
+    local normalized = normalizePath(d)
+    allComponents[i] = splitString(normalized, "/")
+  end
+
+  -- Find the minimum number of components across all paths
+  local minLength = #allComponents[1]
+  for i = 2, #allComponents do
+    if #allComponents[i] < minLength then
+      minLength = #allComponents[i]
     end
   end
+
+  -- Find common prefix by comparing components at each position
+  local commonComponents = {}
+  for pos = 1, minLength do
+    local component = allComponents[1][pos]
+    local allMatch = true
+
+    for i = 2, #allComponents do
+      if allComponents[i][pos] ~= component then
+        allMatch = false
+        break
+      end
+    end
+
+    if allMatch then
+      table.insert(commonComponents, component)
+    else
+      break
+    end
+  end
+
+  -- Join the common components back into a path
+  if #commonComponents == 0 then
+    return ""
+  end
+
+  local result = table.concat(commonComponents, "/")
+
+  -- Preserve leading slash for Unix-style absolute paths
+  local firstPath = normalizePath(directories[1])
+  if firstPath:sub(1, 1) == "/" then
+    result = "/" .. result
+  end
+
+  return result
+end
 
 local function deletePrefix(s, p)
   local t = (s:sub(0, #p) == p) and s:sub(#p + 1) or s
