@@ -33,6 +33,9 @@ exportServiceProvider.exportPresetFields = { {
 }, {
   key = 'destinationRootDirectory',
   default = ""
+}, {
+  key = 'LR_jpeg_quality',
+  default = 85
 } }
 
 --[[
