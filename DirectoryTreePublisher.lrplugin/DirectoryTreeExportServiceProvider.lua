@@ -36,7 +36,7 @@ exportServiceProvider.exportPresetFields = {{
 Add fields to the export dialog for source and target directories.
 ]]
 function exportServiceProvider.sectionsForTopOfDialog(f, propertyTable)
-  return { -- consider LrDialogs.runOpenPanel( args )
+  return {
   {
     title = LOC "$$$/DirectoryTreePublisher/ExportDialog/Account=Directories",
 
@@ -48,28 +48,59 @@ function exportServiceProvider.sectionsForTopOfDialog(f, propertyTable)
       }
     },
 
-    -- This adds a text box accepting the directory where the published files
-    -- will be written.
+    -- Source root folder with browse button
     f:row{
       spacing = f:control_spacing(),
       f:static_text{
         title = "Source root folder:",
-        alignment = 'left'
+        alignment = 'left',
+        width = 120
       },
       f:edit_field{
         fill_horizontal = 1,
         value = bind 'sourceRootDirectory'
+      },
+      f:push_button{
+        title = "Browse...",
+        action = function()
+          local result = LrDialogs.runOpenPanel{
+            title = "Select Source Root Folder",
+            canChooseFiles = false,
+            canChooseDirectories = true,
+            allowsMultipleSelection = false
+          }
+          if result and #result > 0 then
+            propertyTable.sourceRootDirectory = result[1]
+          end
+        end
       }
     },
+
+    -- Destination folder with browse button
     f:row{
       spacing = f:control_spacing(),
       f:static_text{
         title = "Destination folder:",
-        alignment = 'left'
+        alignment = 'left',
+        width = 120
       },
       f:edit_field{
         fill_horizontal = 1,
         value = bind 'destinationRootDirectory'
+      },
+      f:push_button{
+        title = "Browse...",
+        action = function()
+          local result = LrDialogs.runOpenPanel{
+            title = "Select Destination Folder",
+            canChooseFiles = false,
+            canChooseDirectories = true,
+            allowsMultipleSelection = false
+          }
+          if result and #result > 0 then
+            propertyTable.destinationRootDirectory = result[1]
+          end
+        end
       }
     }
 
