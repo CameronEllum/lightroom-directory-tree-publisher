@@ -66,14 +66,30 @@ function exportServiceProvider.sectionsForTopOfDialog(f, propertyTable)
         f:push_button {
           title = "Browse...",
           action = function()
-            local result = LrDialogs.runOpenPanel {
-              title = "Select Source Root Folder",
-              canChooseFiles = false,
-              canChooseDirectories = true,
-              allowsMultipleSelection = false
-            }
+            local success, result = pcall(function()
+              return LrDialogs.runOpenPanel {
+                title = "Select Source Root Folder",
+                canChooseFiles = false,
+                canChooseDirectories = true,
+                allowsMultipleSelection = false
+              }
+            end)
+
+            if not success then
+              Logger.error("Failed to open folder browser: " .. tostring(result))
+              LrDialogs.message("Error", "Failed to open folder browser.", "critical")
+              return
+            end
+
             if result and #result > 0 then
-              propertyTable.sourceRootDirectory = result[1]
+              local selectedPath = result[1]
+              if LrFileUtils.exists(selectedPath) then
+                propertyTable.sourceRootDirectory = selectedPath
+                Logger.info("Source root folder set to: " .. selectedPath)
+              else
+                Logger.warn("Selected path does not exist: " .. selectedPath)
+                LrDialogs.message("Warning", "The selected folder does not exist.", "warning")
+              end
             end
           end
         }
@@ -94,14 +110,30 @@ function exportServiceProvider.sectionsForTopOfDialog(f, propertyTable)
         f:push_button {
           title = "Browse...",
           action = function()
-            local result = LrDialogs.runOpenPanel {
-              title = "Select Destination Folder",
-              canChooseFiles = false,
-              canChooseDirectories = true,
-              allowsMultipleSelection = false
-            }
+            local success, result = pcall(function()
+              return LrDialogs.runOpenPanel {
+                title = "Select Destination Folder",
+                canChooseFiles = false,
+                canChooseDirectories = true,
+                allowsMultipleSelection = false
+              }
+            end)
+
+            if not success then
+              Logger.error("Failed to open folder browser: " .. tostring(result))
+              LrDialogs.message("Error", "Failed to open folder browser.", "critical")
+              return
+            end
+
             if result and #result > 0 then
-              propertyTable.destinationRootDirectory = result[1]
+              local selectedPath = result[1]
+              if LrFileUtils.exists(selectedPath) then
+                propertyTable.destinationRootDirectory = selectedPath
+                Logger.info("Destination folder set to: " .. selectedPath)
+              else
+                Logger.warn("Selected path does not exist: " .. selectedPath)
+                LrDialogs.message("Warning", "The selected folder does not exist.", "warning")
+              end
             end
           end
         }
