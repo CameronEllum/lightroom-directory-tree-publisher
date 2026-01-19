@@ -90,6 +90,32 @@ local function splitString(inputstr, sep)
   return t
 end
 
+--[[
+Returns the longest common root among the given directories.
+
+The longest common root is defined as the longest path that is common
+to all directories.
+
+The directories are expected to be given in a table where the keys
+are the directory names and the values are the paths to the directories.
+
+The function returns a table with the longest common root as the key
+and the value is the remaining path after the longest common root.
+
+Example:
+
+local directories = {
+  dir1 = "a/b/c/dir1",
+  dir2 = "a/b/c/dir2"
+}
+
+local longestCommonRoot = longestCommonRoot(directories)
+
+-- longestCommonRoot is now { a/b/c = { dir1 = "", dir2 = "" } }
+
+!!! Doesn't currently work! !!!
+
+--]]
 local function longestCommonRoot(directories)
   local components = {}
   for _, d in pairs(directories) do
@@ -99,8 +125,8 @@ local function longestCommonRoot(directories)
   local commonComponents = {}
   for _, d in pairs(directories) do
     Logger.info(d)
+    end
   end
-end
 
 local function deletePrefix(s, p)
   local t = (s:sub(0, #p) == p) and s:sub(#p + 1) or s
